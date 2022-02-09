@@ -1,0 +1,228 @@
+#include <iostream>
+#include <cstdio>
+#include <string>
+#include <string.h>
+#include <queue>
+#include <math.h>
+#include <cmath>
+#include <map>
+#include <set>
+#include <vector>
+#include <algorithm>
+#include <bitset>
+#include <ctype.h>
+#include <cassert>
+#include <stack>
+#include <fstream>
+#include <unordered_set>
+
+using namespace std;
+
+#define snd second
+#define fst first
+#define mp make_pair
+#define ll long long
+#define ull unsigned long long
+#define ld long double
+#define pb push_back
+#define left _left
+#define y1 _y1
+
+template < typename T > T abs(T x)
+{
+return x > 0 ? x : -x;
+}
+
+struct node
+{
+node *l, *r, *p;
+int key, pr;
+int size;
+
+bool rev;
+
+node()
+{
+l = r = p = NULL;
+pr = rand();
+size = 1;
+rev = false;
+}
+
+void push()
+{
+if (rev)
+{
+if (l)
+    l->rev ^= 1;
+if (r)
+    r->rev ^= 1;
+swap(l, r);
+rev = false;
+}
+}
+
+void update()
+{
+size = 1 + (l ? l->size : 0) + (r ? r->size : 0);
+}
+};
+
+int getSize(node *v)
+{
+return v ? v->size : 0;
+}
+
+typedef node* pnode;
+
+pnode merge(pnode l, pnode r)
+{
+if (!l || !r)
+return l ? l : r;
+
+l->push();
+r->push();
+
+if (l->pr > r->pr)
+{
+l->r = merge(l->r, r);
+l->r->p = l;
+l->update();
+return l;
+}
+else
+{
+r->l = merge(l, r->l);
+r->l->p = r;
+r->update();
+return r;
+}
+}
+
+void split(pnode v, pnode &l, pnode &r, int key)
+{
+if (!v)
+{
+l = r = NULL;
+return;
+}
+
+v->push();
+v->p = NULL;
+
+if (1 + getSize(v->l) <= key)
+{
+l = v;
+split(l->r, l->r, r, key - 1 - getSize(v->l));
+if (l->r)
+l->r->p = l;
+}
+else
+{
+r = v;
+split(r->l, l, r->l, key);
+if (r->l)
+r->l->p = r;
+}
+
+if (l)
+l->update();
+if (r)
+r->update();
+}
+
+const int maxn = 100005;
+
+node *a[maxn];
+
+int main(int argc, char *argv[])
+{
+//freopen("a.in", "r", stdin);
+
+int n, q;
+scanf("%d %d", &n, &q);
+
+a[0] = new node();
+a[0]->key = 0;
+
+node *root = a[0];
+
+for (int i = 1; i < n; i++)
+{
+node *v = new node();
+v->key = i;
+a[i] = v;
+root = merge(root, v);
+}
+
+for (int i = 0; i < q; i++)
+{
+int type;
+scanf("%d", &type);
+
+if (type == 1)
+{
+int u, v;
+scanf("%d %d", &u, &v);
+
+pnode left, center, right;
+split(root, left, right, u - 1);
+split(right, center, right, v - u + 1);
+
+center->rev ^= 1;
+
+root = merge(merge(left, center), right);
+}
+else if (type == 3)
+{
+int u;
+scanf("%d", &u);
+
+pnode left, center, right;
+split(root, center, right, u);
+split(center, left, center, u - 1);
+
+printf("element at position %d is %d\n", u, center->key + 1);
+
+root = merge(merge(left, center), right);
+}
+else
+{
+int u;
+scanf("%d", &u);
+
+node *v = a[u - 1];
+
+vector < pnode > b;
+
+while (v != NULL)
+{
+b.pb(v);
+v = v->p;
+}
+
+for (int j = b.size() - 1; j >= 0; j--)
+{
+b[j]->push();
+}
+
+v = a[u - 1];
+
+int ans = getSize(v->l) + 1;
+
+while (v->p != NULL)
+{
+if (v->p->r == v)
+{
+ans += getSize(v->p->l) + 1;
+}
+
+v = v->p;
+}
+
+printf("element %d is at position %d\n", u, ans);
+}
+}
+
+return 0;
+}
